@@ -1,19 +1,117 @@
 import pg from "pg";
+import type { Pool as PgPool, PoolClient, QueryConfig, QueryResult, QueryResultRow } from "pg";
 import { logger } from "../utils/logger.js";
 
 const { Pool } = pg;
+let metadataPool: PgPool | undefined;
 
-if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
+interface PublicError extends Error {
+  statusCode?: number;
+  exposeMessage?: boolean;
+}
 
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
-  max: 10,
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30000
-});
+export function publicDatabaseErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+  if (lower.includes("database_url")) {
+    return "DATABASE_URL no esta configurado en Render.";
+  }
+  if (
+    lower.includes("ecircuitbreaker") ||
+    lower.includes("authentication failed") ||
+    lower.includes("password authentication failed") ||
+    lower.includes("too many authentication failures")
+  ) {
+    return "La base de datos rechazo la conexion. Corrige DATABASE_URL en Render y espera unos minutos si el proveedor bloqueo conexiones por autenticacion fallida.";
+  }
+  if (lower.includes("self-signed certificate") || lower.includes("certificate chain")) {
+    return "No se pudo validar el certificado SSL de la base de datos. La aplicacion forzara SSL compatible con Supabase.";
+  }
+  return "La base de datos no esta disponible. Revisa DATABASE_URL en Render.";
+}
 
-pool.on("error", (error) => logger.error({ error }, "Metadata database pool error"));
+function isDatabaseConnectionError(error: unknown): boolean {
+  const code = (error as { code?: string })?.code;
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return Boolean(
+    code && ["28P01", "3D000", "53300", "57P03", "ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "ETIMEDOUT", "EAI_AGAIN"].includes(code)
+  ) || [
+    "database_url",
+    "ecircuitbreaker",
+    "authentication failed",
+    "password authentication failed",
+    "too many authentication failures",
+    "self-signed certificate",
+    "certificate chain",
+    "connection terminated",
+    "connect timeout",
+    "timeout exceeded"
+  ].some((part) => message.includes(part));
+}
+
+function normalizeDatabaseError(error: unknown): never {
+  if (!isDatabaseConnectionError(error)) throw error;
+  const publicError = new Error(publicDatabaseErrorMessage(error)) as PublicError;
+  publicError.statusCode = 503;
+  publicError.exposeMessage = true;
+  throw publicError;
+}
+
+function createPool(): PgPool {
+  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
+  if (!metadataPool) {
+    metadataPool = new Pool({
+      connectionString: databaseConnectionString(),
+      ssl: shouldUseSsl() ? { rejectUnauthorized: false } : undefined,
+      max: 10,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000
+    });
+    metadataPool.on("error", (error) => logger.error({ error }, "Metadata database pool error"));
+  }
+  return metadataPool;
+}
+
+function databaseConnectionString(): string {
+  const value = process.env.DATABASE_URL;
+  if (!value) throw new Error("DATABASE_URL is required");
+  try {
+    const url = new URL(value);
+    for (const key of ["sslmode", "sslcert", "sslkey", "sslrootcert"]) {
+      url.searchParams.delete(key);
+    }
+    return url.toString();
+  } catch {
+    return value;
+  }
+}
+
+function shouldUseSsl(): boolean {
+  const value = process.env.DATABASE_URL ?? "";
+  return process.env.NODE_ENV === "production" || value.includes("supabase.com") || value.includes("sslmode=");
+}
+
+export const pool = {
+  query<T extends QueryResultRow = any>(queryTextOrConfig: string | QueryConfig, values?: unknown[]): Promise<QueryResult<T>> {
+    try {
+      const db = createPool();
+      const query = values ? db.query<T>(queryTextOrConfig as string, values) : db.query<T>(queryTextOrConfig);
+      return query.catch((error) => normalizeDatabaseError(error));
+    } catch (error) {
+      normalizeDatabaseError(error);
+    }
+  },
+  connect(): Promise<PoolClient> {
+    try {
+      return createPool().connect().catch((error) => normalizeDatabaseError(error));
+    } catch (error) {
+      normalizeDatabaseError(error);
+    }
+  },
+  end(): Promise<void> {
+    return metadataPool ? metadataPool.end() : Promise.resolve();
+  }
+};
 
 export async function initializeDatabase(): Promise<void> {
   await pool.query(`
