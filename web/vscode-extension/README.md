@@ -11,6 +11,16 @@ Extension local para trabajar con la skill, plugin y chatbox del proyecto Databa
 - `Database Nexus: Validar skill, plugin y chatbox`
 - `Database Nexus: Abrir app local`
 
+## Instalacion
+
+Descarga `database-nexus-vscode-0.1.0.vsix` desde la release del repositorio e instalala desde VS Code:
+
+```bash
+code --install-extension database-nexus-vscode-0.1.0.vsix
+```
+
+Tambien puedes abrir VS Code y usar **Extensions > Install from VSIX...**.
+
 ## Proposito
 
 La extension deja visible en VS Code la integracion pedida para el proyecto:

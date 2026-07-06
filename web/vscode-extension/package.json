@@ -4,9 +4,19 @@
   "description": "Extension de VS Code para trabajar con la skill, plugin y flujo de replicacion de Database Nexus.",
   "version": "0.1.0",
   "publisher": "victorplatero",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos.git"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
+  "files": [
+    "extension.js",
+    "README.md",
+    "LICENSE"
+  ],
   "categories": [
     "Other"
   ],
