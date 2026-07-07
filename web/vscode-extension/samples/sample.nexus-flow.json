@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "kind": "database-nexus-flow",
+  "name": "Clientes CSV a SQLite demo",
+  "description": "Flujo de ejemplo para documentar una replica entre un archivo importado y una base destino.",
+  "createdAt": "2026-07-07T00:00:00.000Z",
+  "source": {
+    "type": "imported-file",
+    "name": "clientes_csv",
+    "databaseId": "TODO_SOURCE_DATABASE_ID"
+  },
+  "destination": {
+    "type": "imported-file",
+    "name": "clientes_sqlite",
+    "databaseId": "TODO_DESTINATION_DATABASE_ID"
+  },
+  "tables": [
+    {
+      "sourceTable": "clientes",
+      "destinationTable": "clientes",
+      "writeMode": "upsert",
+      "keyColumns": ["id"],
+      "batchSize": 5000,
+      "mappings": [
+        {
+          "sourceColumn": "id",
+          "destinationColumn": "id",
+          "type": "integer",
+          "transform": null,
+          "required": true
+        },
+        {
+          "sourceColumn": "nombre",
+          "destinationColumn": "nombre",
+          "type": "text",
+          "transform": null,
+          "required": true
+        },
+        {
+          "sourceColumn": "email",
+          "destinationColumn": "email",
+          "type": "text",
+          "transform": "lowercase",
+          "required": false
+        },
+        {
+          "sourceColumn": "total_compras",
+          "destinationColumn": "total_compras",
+          "type": "decimal",
+          "transform": null,
+          "required": false
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "requirePreviewBeforeRun": true,
+    "requireKeyColumnsForUpsert": true,
+    "stopOnRejectedBatch": true
+  }
+}

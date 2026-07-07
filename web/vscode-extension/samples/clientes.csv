@@ -1,0 +1,5 @@
+id,nombre,email,fecha_registro,activo,total_compras
+1,Ana Torres,ana.torres@example.com,2026-07-01,true,120.50
+2,Carlos Ruiz,carlos.ruiz@example.com,2026-07-02,true,340.00
+3,Lucia Perez,lucia.perez@example.com,2026-07-03,false,0.00
+4,Victor Platero,victor.platero@example.com,2026-07-04,true,89.90

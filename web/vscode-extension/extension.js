@@ -1,4 +1,7 @@
 const vscode = require("vscode");
+const path = require("path");
+const { analyzeDatabaseFile, formatAnalysisMarkdown } = require("./fileAnalysis");
+const { buildReplicationFlow, slug } = require("./flowTemplate");
 
 const PROJECT_FILES = {
   skill: "frontend/src/skills/database-nexus-assistant.md",
@@ -38,14 +41,16 @@ function activate(context) {
     vscode.commands.registerCommand("databaseNexus.openChatbox", () => openProjectFile(PROJECT_FILES.chatbox)),
     vscode.commands.registerCommand("databaseNexus.insertPrompt", insertSuggestedPrompt),
     vscode.commands.registerCommand("databaseNexus.validateAssistant", validateAssistantIntegration),
-    vscode.commands.registerCommand("databaseNexus.openLocalApp", () => vscode.env.openExternal(vscode.Uri.parse("http://localhost:5173")))
+    vscode.commands.registerCommand("databaseNexus.openLocalApp", openLocalApp),
+    vscode.commands.registerCommand("databaseNexus.createFlow", createReplicationFlow),
+    vscode.commands.registerCommand("databaseNexus.analyzeDatabaseFile", analyzeSelectedDatabaseFile)
   );
 }
 
 function deactivate() {}
 
 async function openProjectFile(relativePath) {
-  const root = workspaceRoot();
+  const root = await webRoot();
   if (!root) return;
 
   const uri = vscode.Uri.joinPath(root, ...relativePath.split("/"));
@@ -77,7 +82,7 @@ async function insertSuggestedPrompt() {
 }
 
 async function validateAssistantIntegration() {
-  const root = workspaceRoot();
+  const root = await webRoot();
   if (!root) return;
 
   const checks = [
@@ -105,6 +110,125 @@ async function validateAssistantIntegration() {
   }
 }
 
+async function openLocalApp() {
+  await vscode.env.openExternal(vscode.Uri.parse("http://localhost:5173"));
+  vscode.window.showInformationMessage("Database Nexus: si la app no abre, ejecuta npm run dev:frontend en la carpeta web.");
+}
+
+async function createReplicationFlow() {
+  const root = await webRoot();
+  if (!root) return;
+
+  const name = await vscode.window.showInputBox({
+    title: "Nombre del flujo",
+    prompt: "Ejemplo: Clientes SQLite a PostgreSQL",
+    value: "Clientes demo a destino"
+  });
+  if (name === undefined) return;
+
+  const sourceName = await vscode.window.showInputBox({
+    title: "Origen",
+    prompt: "Nombre de la base o archivo origen",
+    value: "clientes_origen"
+  });
+  if (sourceName === undefined) return;
+
+  const destinationName = await vscode.window.showInputBox({
+    title: "Destino",
+    prompt: "Nombre de la base o archivo destino",
+    value: "clientes_destino"
+  });
+  if (destinationName === undefined) return;
+
+  const sourceTable = await vscode.window.showInputBox({
+    title: "Tabla origen",
+    prompt: "Nombre de la tabla origen",
+    value: "clientes"
+  });
+  if (sourceTable === undefined) return;
+
+  const destinationTable = await vscode.window.showInputBox({
+    title: "Tabla destino",
+    prompt: "Nombre de la tabla destino",
+    value: sourceTable || "clientes"
+  });
+  if (destinationTable === undefined) return;
+
+  const writeModePick = await vscode.window.showQuickPick([
+    { label: "upsert", description: "Actualiza o inserta usando columnas clave" },
+    { label: "insert", description: "Inserta filas nuevas en destino vacio" },
+    { label: "replace", description: "Sobrescribe filas seleccionadas" },
+    { label: "truncate-reload", description: "Vacia y recarga la tabla completa" }
+  ], {
+    title: "Modo de escritura",
+    placeHolder: "Selecciona el modo de escritura"
+  });
+  if (!writeModePick) return;
+
+  const mappings = await vscode.window.showInputBox({
+    title: "Mapeo de columnas",
+    prompt: "Formato: origen:destino:tipo,origen2:destino2:tipo2",
+    value: "id:id:integer,nombre:nombre:text,email:email:text"
+  });
+  if (mappings === undefined) return;
+
+  const flow = buildReplicationFlow({
+    name,
+    sourceName,
+    destinationName,
+    sourceTable,
+    destinationTable,
+    writeMode: writeModePick.label,
+    mappings
+  });
+
+  const folder = vscode.Uri.joinPath(root, "nexus-flows");
+  await vscode.workspace.fs.createDirectory(folder);
+  const fileName = `${slug(name || "replication-flow")}.nexus-flow.json`;
+  const uri = vscode.Uri.joinPath(folder, fileName);
+  const content = Buffer.from(`${JSON.stringify(flow, null, 2)}\n`, "utf8");
+  await vscode.workspace.fs.writeFile(uri, content);
+
+  const document = await vscode.workspace.openTextDocument(uri);
+  await vscode.window.showTextDocument(document);
+  vscode.window.showInformationMessage(`Database Nexus: flujo creado en nexus-flows/${fileName}`);
+}
+
+async function analyzeSelectedDatabaseFile(uri) {
+  const selectedUri = uri || vscode.window.activeTextEditor?.document.uri || await pickDatabaseFile();
+  if (!selectedUri) return;
+
+  const extension = path.extname(selectedUri.fsPath).toLowerCase();
+  const supported = new Set([".sqlite", ".sqlite3", ".db", ".csv", ".xlsx", ".json", ".ndjson", ".sql"]);
+  if (!supported.has(extension)) {
+    vscode.window.showWarningMessage(`Database Nexus: ${extension || "archivo"} no es un formato soportado para analisis.`);
+    return;
+  }
+
+  try {
+    const bytes = Buffer.from(await vscode.workspace.fs.readFile(selectedUri));
+    const analysis = analyzeDatabaseFile(selectedUri.fsPath, bytes);
+    const document = await vscode.workspace.openTextDocument({
+      language: "markdown",
+      content: formatAnalysisMarkdown(analysis)
+    });
+    await vscode.window.showTextDocument(document, { preview: false });
+  } catch (error) {
+    vscode.window.showErrorMessage(`Database Nexus: no se pudo analizar el archivo. ${error.message}`);
+  }
+}
+
+async function pickDatabaseFile() {
+  const picked = await vscode.window.showOpenDialog({
+    canSelectMany: false,
+    filters: {
+      "Archivos de datos": ["sqlite", "sqlite3", "db", "csv", "xlsx", "json", "ndjson", "sql"]
+    },
+    title: "Selecciona un archivo para analizar"
+  });
+  return picked?.[0];
+}
+
 function fileCheck(name, relativePath, expectedText) {
   return { name, relativePath, expectedText };
 }
@@ -129,13 +253,39 @@ async function runCheck(root, check) {
   }
 }
 
-function workspaceRoot() {
-  const folder = vscode.workspace.workspaceFolders?.[0];
-  if (!folder) {
+async function workspaceRoot() {
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders?.length) {
     vscode.window.showErrorMessage("Abre la carpeta Drop_Nexus para usar Database Nexus Replicator.");
     return undefined;
   }
-  return folder.uri;
+  return folders[0].uri;
+}
+
+async function webRoot() {
+  const root = await workspaceRoot();
+  if (!root) return undefined;
+
+  if (await exists(vscode.Uri.joinPath(root, "frontend", "src")) && await exists(vscode.Uri.joinPath(root, "backend", "src"))) {
+    return root;
+  }
+
+  const nested = vscode.Uri.joinPath(root, "web");
+  if (await exists(vscode.Uri.joinPath(nested, "frontend", "src")) && await exists(vscode.Uri.joinPath(nested, "backend", "src"))) {
+    return nested;
+  }
+
+  vscode.window.showErrorMessage("No se encontro la carpeta web/frontend y web/backend. Abre la raiz del repositorio o la carpeta web.");
+  return undefined;
+}
+
+async function exists(uri) {
+  try {
+    await vscode.workspace.fs.stat(uri);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 module.exports = { activate, deactivate };

@@ -14,16 +14,16 @@ Repositorio local de entrega para el proyecto **Replicador de Datos entre Bases 
 
 ## Descargas
 
-Release: [Database Nexus Assistant v0.1.0](https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos/releases/tag/v0.1.0)
+Release: [Database Nexus Toolkit v0.2.0](https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos/releases/tag/v0.2.0)
 
-- [Extension VS Code `.vsix`](https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos/releases/download/v0.1.0/database-nexus-vscode-0.1.0.vsix)
-- [Skill empaquetada `.zip`](https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos/releases/download/v0.1.0/database-nexus-assistant-skill-0.1.0.zip)
-- [Skill Markdown `.md`](https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos/releases/download/v0.1.0/database-nexus-assistant.md)
+- [Extension VS Code `.vsix`](https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos/releases/download/v0.2.0/database-nexus-vscode-0.2.0.vsix)
+- [Skill empaquetada `.zip`](https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos/releases/download/v0.2.0/database-nexus-assistant-skill-0.1.0.zip)
+- [Skill Markdown `.md`](https://github.com/UPT-FAING-EPIS/proyecto-si783-2026-i-u3-replicador_de_datos_entre_base_de_datos/releases/download/v0.2.0/database-nexus-assistant.md)
 
 Instala la extension desde VS Code con **Extensions > Install from VSIX...** o con:
 
 ```bash
-code --install-extension database-nexus-vscode-0.1.0.vsix
+code --install-extension database-nexus-vscode-0.2.0.vsix
 ```
 
 ## App web

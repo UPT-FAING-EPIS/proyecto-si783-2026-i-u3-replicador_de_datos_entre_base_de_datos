@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1001,
+    "cliente_id": 1,
+    "producto": "Plan basico",
+    "monto": 59.9,
+    "fecha": "2026-07-01",
+    "estado": "pagado"
+  },
+  {
+    "id": 1002,
+    "cliente_id": 2,
+    "producto": "Plan profesional",
+    "monto": 120.5,
+    "fecha": "2026-07-02",
+    "estado": "pagado"
+  },
+  {
+    "id": 1003,
+    "cliente_id": 3,
+    "producto": "Migracion asistida",
+    "monto": 230,
+    "fecha": "2026-07-03",
+    "estado": "pendiente"
+  }
+]

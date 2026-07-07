@@ -2,7 +2,7 @@
   "name": "database-nexus-vscode",
   "displayName": "Database Nexus Replicator",
   "description": "Extension de VS Code para trabajar con la skill, plugin y flujo de replicacion de Database Nexus.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "victorplatero",
   "license": "MIT",
   "repository": {
@@ -14,8 +14,11 @@
   },
   "files": [
     "extension.js",
+    "fileAnalysis.js",
+    "flowTemplate.js",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "samples/**"
   ],
   "categories": [
     "Other"
@@ -26,7 +29,9 @@
     "onCommand:databaseNexus.openChatbox",
     "onCommand:databaseNexus.insertPrompt",
     "onCommand:databaseNexus.validateAssistant",
-    "onCommand:databaseNexus.openLocalApp"
+    "onCommand:databaseNexus.openLocalApp",
+    "onCommand:databaseNexus.createFlow",
+    "onCommand:databaseNexus.analyzeDatabaseFile"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -54,10 +59,23 @@
       {
         "command": "databaseNexus.openLocalApp",
         "title": "Database Nexus: Abrir app local"
+      },
+      {
+        "command": "databaseNexus.createFlow",
+        "title": "Database Nexus: Crear flujo de replicacion"
+      },
+      {
+        "command": "databaseNexus.analyzeDatabaseFile",
+        "title": "Database Nexus: Analizar archivo de datos"
       }
     ],
     "menus": {
       "explorer/context": [
+        {
+          "command": "databaseNexus.analyzeDatabaseFile",
+          "when": "resourceExtname == .sqlite || resourceExtname == .sqlite3 || resourceExtname == .db || resourceExtname == .csv || resourceExtname == .xlsx || resourceExtname == .json || resourceExtname == .ndjson || resourceExtname == .sql",
+          "group": "navigation@19"
+        },
         {
           "command": "databaseNexus.validateAssistant",
           "group": "navigation@20"
@@ -81,6 +99,12 @@
         },
         {
           "command": "databaseNexus.openLocalApp"
+        },
+        {
+          "command": "databaseNexus.createFlow"
+        },
+        {
+          "command": "databaseNexus.analyzeDatabaseFile"
         }
       ]
     }
