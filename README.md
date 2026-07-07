@@ -10,6 +10,7 @@ Repositorio local de entrega para el proyecto **Replicador de Datos entre Bases 
 - `FD04-EPIS-Informe Arquitectura de Software.docx`: arquitectura frontend/backend, servicios, seguridad y despliegue.
 - `FD05-EPIS-Informe ProyectoFinal.docx`: resumen de funcionalidades, pruebas, resultados y conclusiones.
 - `FD06-EPIS-PropuestaProyecto.docx`: propuesta, objetivos, alcance, cronograma y criterios de exito.
+- `DICCIONARIO-DE-DATOS.md`: diccionario fisico, logico y de contratos API del proyecto.
 - `web/`: aplicacion web completa Drop Nexus.
 
 ## Descargas
